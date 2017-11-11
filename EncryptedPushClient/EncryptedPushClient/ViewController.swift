@@ -8,7 +8,7 @@
 
 import UIKit
 
-let keychainAccessGroupName = "9WF89A89NX.com.porterhoskins.EncyptedPushTest"
+let keychainAccessGroupName = "9WF89A89NX.com.porterhoskins.EncryptedPushTest"
 
 class ViewController: UIViewController {
 
