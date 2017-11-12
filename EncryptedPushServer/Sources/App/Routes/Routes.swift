@@ -3,7 +3,6 @@ import Foundation
 
 extension Droplet {
     func setupRoutes() throws {
-        
         post("test") { request in
             guard let publicKeyEncoded = request.json?["publicKey"]?.string, let publicKeyData = Data(base64Encoded: publicKeyEncoded) else {
                 throw Abort(.badRequest)
@@ -33,8 +32,17 @@ extension Droplet {
                 throw Abort(.badRequest)
             }
             
+            var notification = Notification(message: (cipherText as Data).base64EncodedString())
+            notification.title = Message("Test")
+            notification.isContentMutable = true
+            notification.users = ["e84e8656-ef27-4857-bca6-8e1ff796cf79"]
+            do {
+                try OneSignal.instance.send(notification: notification, client: self.client)
+            } catch {
+                print("error sending message to onesignal: \(error)")
+            }
+            
             return cipherText as Data
         }
-        
     }
 }

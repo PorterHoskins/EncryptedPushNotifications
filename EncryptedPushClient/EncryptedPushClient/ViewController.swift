@@ -8,26 +8,32 @@
 
 import UIKit
 
+let keyAttributes: [String: Any] = [
+    kSecAttrKeyType as String: kSecAttrKeyTypeRSA,
+    kSecAttrKeySizeInBits as String: 2048,
+    kSecPrivateKeyAttrs as String: [
+        kSecAttrIsPermanent as String: true,
+        kSecAttrApplicationTag as String: "com.porterhoskins.testKey".data(using: .utf8)!,
+        kSecAttrAccessGroup as String: keychainAccessGroupName,
+    ]
+]
+
 let keychainAccessGroupName = "9WF89A89NX.com.porterhoskins.EncryptedPushTest"
 
 class ViewController: UIViewController {
+    
+    var privateKey: SecKey?
 
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
-    }
-
-    @IBAction func sendPushTapped(_ sender: Any) {
-        let tag = "com.porterhoskins.testKey".data(using: .utf8)!
-        let keyAttributes: [String: Any] = [
-            kSecAttrKeyType as String: kSecAttrKeyTypeRSA,
-            kSecAttrKeySizeInBits as String: 2048,
-            kSecPrivateKeyAttrs as String: [
-                kSecAttrIsPermanent as String: true,
-                kSecAttrApplicationTag as String: tag,
-                kSecAttrAccessGroup as String: keychainAccessGroupName,
-            ]
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassKey,
+            kSecAttrApplicationTag as String: "com.porterhoskins.testKey".data(using: .utf8)!,
+            kSecAttrAccessGroup as String: keychainAccessGroupName
         ]
+        
+        SecItemDelete(query as CFDictionary)
         
         var error: Unmanaged<CFError>?
         guard let privateKey = SecKeyCreateRandomKey(keyAttributes as CFDictionary, &error) else {
@@ -36,7 +42,13 @@ class ViewController: UIViewController {
             return
         }
         
-        let publicKey = SecKeyCopyPublicKey(privateKey)
+        self.privateKey = privateKey
+    }
+
+    @IBAction func sendPushTapped(_ sender: Any) {
+        var error: Unmanaged<CFError>?
+        
+        let publicKey = SecKeyCopyPublicKey(privateKey!)
         let publicKeyString = (SecKeyCopyExternalRepresentation(publicKey!, &error)! as Data).base64EncodedString()
         
         let json = try! JSONSerialization.data(withJSONObject: ["publicKey": publicKeyString], options: [])
@@ -51,8 +63,10 @@ class ViewController: UIViewController {
                 print("Error sending key \(error)")
             }
             
+            guard let data = data else { return }
+            
             var encryptError: Unmanaged<CFError>?
-            guard let decrypted = SecKeyCreateDecryptedData(privateKey, .rsaEncryptionOAEPSHA512, data! as CFData, &encryptError) else {
+            guard let decrypted = SecKeyCreateDecryptedData(self.privateKey!, .rsaEncryptionOAEPSHA512, data as CFData, &encryptError) else {
                 if let encryptError = encryptError {
                     print("Error sending key \(encryptError.takeRetainedValue() as Error)")
                 }

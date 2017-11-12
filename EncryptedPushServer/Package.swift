@@ -3,7 +3,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "EncryptedPush",
+    name: "EncryptedPushServer",
     products: [
         .library(name: "App", targets: ["App"]),
         .executable(name: "Run", targets: ["Run"])
